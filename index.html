@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>테스트샵</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #111; }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-size: 18px; font-weight: 600; }
+  .cart-btn {
+    position: relative; background: none;
+    border: 1px solid #ddd; border-radius: 8px;
+    padding: 6px 16px; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; gap: 6px;
+  }
+  .cart-btn:hover { background: #f5f5f5; }
+  .cart-badge {
+    background: #e74c3c; color: #fff;
+    border-radius: 50%; width: 18px; height: 18px;
+    font-size: 11px; display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+  }
+
+  /* Products grid */
+  .main { padding: 1.5rem; }
+  .section-title { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+  .products {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .product-card {
+    background: #fff; border: 1px solid #e5e5e5;
+    border-radius: 12px; overflow: hidden; cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+  .product-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .product-img {
+    width: 100%; height: 120px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; background: #fafafa;
+  }
+  .product-info { padding: 10px 12px; }
+  .product-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .product-price { font-size: 13px; color: #666; margin-bottom: 10px; }
+  .add-btn {
+    width: 100%; border: 1px solid #ddd; background: none;
+    border-radius: 8px; padding: 6px; font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .add-btn:hover { background: #f0f0f0; }
+  .add-btn:active { transform: scale(0.97); }
+
+  /* Cart sidebar */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 200;
+  }
+  .overlay.open { display: block; }
+  .cart-panel {
+    position: fixed; top: 0; right: -300px; width: 300px; height: 100%;
+    background: #fff; border-left: 1px solid #e5e5e5;
+    padding: 1.25rem; display: flex; flex-direction: column; gap: 12px;
+    z-index: 300; transition: right 0.25s ease;
+  }
+  .cart-panel.open { right: 0; }
+  .cart-header { display: flex; justify-content: space-between; align-items: center; }
+  .cart-header h2 { font-size: 16px; font-weight: 600; }
+  .close-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; color: #666; padding: 2px 6px; line-height: 1;
+  }
+  .close-btn:hover { color: #111; }
+  .cart-items { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .empty-msg { font-size: 13px; color: #999; text-align: center; margin-top: 2rem; }
+  .cart-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: #f9f9f9;
+    border-radius: 8px; font-size: 13px;
+  }
+  .cart-item-emoji { font-size: 24px; flex-shrink: 0; }
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-weight: 500; margin-bottom: 2px; }
+  .cart-item-price { color: #666; }
+  .remove-btn {
+    background: none; border: none; cursor: pointer;
+    color: #999; font-size: 18px; line-height: 1; padding: 2px;
+  }
+  .remove-btn:hover { color: #e74c3c; }
+  .cart-footer { border-top: 1px solid #e5e5e5; padding-top: 12px; }
+  .total { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .checkout-btn {
+    width: 100%; background: #111; color: #fff;
+    border: none; border-radius: 8px; padding: 12px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .checkout-btn:hover { background: #333; }
+
+  /* Toast */
+  .toast {
+    display: none; position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    background: #111; color: #fff;
+    padding: 8px 18px; border-radius: 8px;
+    font-size: 13px; z-index: 400;
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="logo">🛍 테스트샵</span>
+  <button class="cart-btn" onclick="toggleCart()">
+    🛒 장바구니
+    <span class="cart-badge" id="badge">0</span>
+  </button>
+</header>
+
+<main class="main">
+  <p class="section-title">상품 목록</p>
+  <div class="products" id="products"></div>
+</main>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay" onclick="toggleCart()"></div>
+
+<!-- Cart panel -->
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-header">
+    <h2>장바구니</h2>
+    <button class="close-btn" onclick="toggleCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <p class="empty-msg">장바구니가 비어있어요</p>
+  </div>
+  <div class="cart-footer">
+    <div class="total">
+      <span>합계</span>
+      <span id="totalPrice">₩0</span>
+    </div>
+    <button class="checkout-btn" onclick="checkout()">결제하기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const products = [
+    { id: 1, name: '무선 이어폰',     price: 29000, emoji: '🎧' },
+    { id: 2, name: '스마트 워치',     price: 89000, emoji: '⌚' },
+    { id: 3, name: '미니 선풍기',     price: 15000, emoji: '🌀' },
+    { id: 4, name: '보조 배터리',     price: 35000, emoji: '🔋' },
+    { id: 5, name: '블루투스 스피커', price: 45000, emoji: '🔊' },
+    { id: 6, name: '노트북 거치대',   price: 22000, emoji: '💻' },
+  ];
+
+  let cart = [];
+
+  // 상품 렌더링
+  function renderProducts() {
+    const el = document.getElementById('products');
+    el.innerHTML = products.map(p => `
+      <div class="product-card">
+        <div class="product-img">${p.emoji}</div>
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-price">₩${p.price.toLocaleString()}</div>
+          <button class="add-btn" onclick="addToCart(${p.id})">+ 담기</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 장바구니에 추가
+  function addToCart(id) {
+    const p = products.find(x => x.id === id);
+    const existing = cart.find(x => x.id === id);
+    if (existing) existing.qty++;
+    else cart.push({ ...p, qty: 1 });
+    updateCart();
+    showToast(`${p.name} 추가됨 ✓`);
+  }
+
+  // 장바구니에서 삭제
+  function removeFromCart(id) {
+    cart = cart.filter(x => x.id !== id);
+    updateCart();
+  }
+
+  // 장바구니 UI 업데이트
+  function updateCart() {
+    const totalQty  = cart.reduce((s, x) => s + x.qty, 0);
+    const totalPrice = cart.reduce((s, x) => s + x.price * x.qty, 0);
+
+    document.getElementById('badge').textContent = totalQty;
+    document.getElementById('totalPrice').textContent = '₩' + totalPrice.toLocaleString();
+
+    const el = document.getElementById('cartItems');
+    if (cart.length === 0) {
+      el.innerHTML = '<p class="empty-msg">장바구니가 비어있어요</p>';
+    } else {
+      el.innerHTML = cart.map(x => `
+        <div class="cart-item">
+          <span class="cart-item-emoji">${x.emoji}</span>
+          <div class="cart-item-info">
+            <div class="cart-item-name">${x.name} x${x.qty}</div>
+            <div class="cart-item-price">₩${(x.price * x.qty).toLocaleString()}</div>
+          </div>
+          <button class="remove-btn" onclick="removeFromCart(${x.id})" title="삭제">✕</button>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 장바구니 열기/닫기
+  function toggleCart() {
+    document.getElementById('cartPanel').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+
+  // 결제
+  function checkout() {
+    if (cart.length === 0) { showToast('장바구니가 비어있어요'); return; }
+    const total = cart.reduce((s, x) => s + x.price * x.qty, 0);
+    cart = [];
+    updateCart();
+    toggleCart();
+    showToast(`₩${total.toLocaleString()} 결제 완료! 🎉`);
+  }
+
+  // 토스트 메시지
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.style.display = 'none', 2000);
+  }
+
+  renderProducts();
+</script>
+</body>
+</html>
